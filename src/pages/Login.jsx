@@ -28,7 +28,8 @@ export default function Login() {
 
   async function seleccionarChofer(chofer) {
     localStorage.setItem('chofer_flota', JSON.stringify(chofer))
-    navigate('/chofer/mis-unidades')
+    // RUTA CORREGIDA: Apunta a tu componente ChoferHome
+    navigate('/chofer') 
   }
 
   async function guardarChofer() {
@@ -78,7 +79,7 @@ export default function Login() {
           Seleccioná tu perfil para continuar
         </p>
 
-        {/* SELECTOR DE PERFIL (TABS PREMIUM) */}
+        {/* SELECTOR DE PERFIL */}
         <div style={{ 
           display: 'flex', 
           background: 'rgba(148, 163, 184, 0.12)', 
@@ -132,7 +133,7 @@ export default function Login() {
           </button>
         </div>
 
-        {/* VISTA DINÁMICA: CHOFER */}
+        {/* VISTA: CHOFER */}
         {perfil === 'chofer' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {loading ? (
@@ -234,11 +235,14 @@ export default function Login() {
           </div>
         )}
 
-        {/* VISTA DINÁMICA: ADMINISTRADOR */}
+        {/* VISTA: ADMINISTRADOR */}
         {perfil === 'admin' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <button 
-              onClick={() => navigate('/admin/unidades')}
+              onClick={() => {
+                // RUTA CORREGIDA: Apunta a tu componente AdminHome
+                navigate('/admin')
+              }}
               style={{
                 width: '100%',
                 padding: '15px',
