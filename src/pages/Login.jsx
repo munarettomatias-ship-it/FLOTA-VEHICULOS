@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
-export default function Login() {
+export default function Login({ setSession, onLogin }) {
   const navigate = useNavigate()
   const [perfil, setPerfil] = useState('chofer') // 'chofer' o 'admin'
   const [choferes, setChoferes] = useState([])
@@ -26,10 +26,21 @@ export default function Login() {
     setLoading(false)
   }
 
+  // Función mágica para actualizar el estado de la app al entrar como Chofer
+  function activarSesion(rol, usuario = null) {
+    const dataSesion = { role: rol, user: usuario }
+    
+    // Intentamos actualizar usando los nombres de funciones más comunes de App.jsx
+    if (typeof setSession === 'function') setSession(dataSesion)
+    if (typeof onLogin === 'function') onLogin(dataSesion)
+    
+    // Volvemos a la ruta raíz donde App.jsx decidirá qué mostrar
+    navigate('/')
+  }
+
   async function seleccionarChofer(chofer) {
     localStorage.setItem('chofer_flota', JSON.stringify(chofer))
-    // RUTA CORREGIDA: Apunta a tu componente ChoferHome
-    navigate('/chofer') 
+    activarSesion('chofer', chofer)
   }
 
   async function guardarChofer() {
@@ -239,10 +250,7 @@ export default function Login() {
         {perfil === 'admin' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <button 
-              onClick={() => {
-                // RUTA CORREGIDA: Apunta a tu componente AdminHome
-                navigate('/admin')
-              }}
+              onClick={() => activarSesion('admin')}
               style={{
                 width: '100%',
                 padding: '15px',

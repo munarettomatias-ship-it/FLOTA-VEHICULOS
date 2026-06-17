@@ -1,145 +1,116 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { invalidateChoferes } from '../lib/cache'
+import { useSession } from '../lib/SessionContext'
+import { getUnidadDeChofer } from '../lib/cache'
 import TopBar from '../components/TopBar'
 
 export default function ChoferHome() {
+  const { session } = useSession()
   const navigate = useNavigate()
-  const [choferes, setChoferes] = useState([])
+  const [unidad, setUnidad] = useState(null)
+  const [ultimoChecklist, setUltimoChecklist] = useState(null)
+  const [fallasPendientes, setFallasPendientes] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [session, setSession] = useState(null)
-  const [showForm, setShowForm] = useState(false)
-  const [nombre, setNombre] = useState('')
-  const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
-    cargarChoferes()
+    cargarDatos()
   }, [])
 
-  async function cargarChoferes() {
+  async function cargarDatos() {
     setLoading(true)
-    const { data } = await supabase
-      .from('choferes')
-      .select('*')
-      .eq('activo', true)
-      .order('nombre')
-    setChoferes(data || [])
+    const unidadData = await getUnidadDeChofer(session.id)
+    setUnidad(unidadData)
+
+    if (unidadData) {
+      // Estas dos consultas son independientes entre sí: se disparan en
+      // paralelo en vez de esperar una y después la otra.
+      const [{ data: checklistData }, { count }] = await Promise.all([
+        supabase
+          .from('checklists')
+          .select('*')
+          .eq('unidad_id', unidadData.id)
+          .order('fecha', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('reportes_fallas')
+          .select('*', { count: 'exact', head: true })
+          .eq('unidad_id', unidadData.id)
+          .neq('estado', 'resuelto'),
+      ])
+      setUltimoChecklist(checklistData)
+      setFallasPendientes(count || 0)
+    }
     setLoading(false)
   }
 
-  async function login(chofer) {
-    // Simulamos una sesión guardando en localStorage
-    localStorage.setItem('chofer_flota', JSON.stringify(chofer))
-    // Navegamos a la pantalla principal del chofer
-    navigate('/chofer/mis-unidades')
-  }
-
-  async function guardarChofer() {
-    if (!nombre.trim()) return
-    setGuardando(true)
-    const { data, error } = await supabase
-      .from('choferes')
-      .insert({ nombre: nombre.trim() })
-      .select()
-      .single()
-    
-    if (!error) {
-      setNombre('')
-      setShowForm(false)
-      cargarChoferes()
-      invalidateChoferes()
-    }
-    setGuardando(false)
-  }
+  const hoy = new Date().toLocaleDateString('es-AR')
+  const checklistHoy = ultimoChecklist &&
+    new Date(ultimoChecklist.fecha).toLocaleDateString('es-AR') === hoy
 
   return (
     <>
-      <TopBar title="Control de Flota" />
-      <div className="content" style={{ padding: '24px 16px', background: '#e0f2f1', minHeight: 'calc(100vh - 60px)' }}>
-        
-        {/* ENCABEZADO Y TEXTO DE INSTRUCCIÓN */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🚛</div>
-          <h1 style={{ fontSize: 24, fontWeight: 'bold', color: '#0f172a', marginBottom: 8 }}>
-            Control de Flota
-          </h1>
-          <p style={{ fontSize: 14, color: '#64748b', maxWidth: '300px', margin: '0 auto' }}>
-            Seleccioná tu perfil de chofer para continuar y gestionar tus unidades.
-          </p>
-        </div>
+      <TopBar title="🚚 Mi Unidad" />
+      <div className="content">
+        {loading && <div className="loading-spinner">Cargando...</div>}
 
-        {/* LISTADO DE CHOFERES EXISTENTES */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: '480px', margin: '0 auto' }}>
-          {choferes.map((c) => (
-            <div 
-              key={c.id} 
-              onClick={() => login(c)}
-              className="card" 
-              style={{ 
-                margin: 0, 
-                padding: '16px 20px', 
-                borderLeft: '5px solid #10b981', // Borde verde para preventivo/activo
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                cursor: 'pointer',
-                backgroundColor: '#fff',
-                transition: 'all 0.2s',
-                ':hover': { boxShadow: '0 4px 6px rgba(0,0,0,0.1)' } // Micro-interacción
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: 20 }}>👤</span>
-                <span style={{ fontSize: 16, fontWeight: '500', color: '#1e293b' }}>{c.nombre}</span>
-              </div>
-              <span style={{ color: '#94a3b8', fontSize: 18 }}>›</span>
+        {!loading && !unidad && (
+          <div className="card">
+            <div className="empty-state">
+              <div className="icon">🚫</div>
+              <p>No tenés una unidad asignada todavía.<br />Consultá con el administrador.</p>
             </div>
-          ))}
+          </div>
+        )}
 
-          {/* CASO: NO HAY CHOFERES */}
-          {choferes.length === 0 && !loading && (
+        {!loading && unidad && (
+          <>
             <div className="card">
-              <p style={{ textAling: 'center', color: '#94a3b8', fontSize: 14 }}>
-                Aún no hay choferes registrados.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* BOTÓN Y FORMULARIO PARA AGREGAR NUEVO CHOFER */}
-        <div style={{ maxWidth: '480px', margin: '24px auto 0', borderTop: '1px solid #cbd5e1', paddingTop: 16 }}>
-          {!showForm && (
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => setShowForm(true)} 
-              style={{ width: '100%', marginBottom: 0 }}
-            >
-              + Agregar nuevo chofer
-            </button>
-          )}
-
-          {showForm && (
-            <div className="card" style={{ padding: 18 }}>
-              <div className="card-title">Registrar nuevo Chofer</div>
-              <div className="field">
-                <label>Nombre completo *</label>
-                <input 
-                  value={nombre} 
-                  onChange={(e) => setNombre(e.target.value)} 
-                  placeholder="Ej: Juan Pérez" 
-                />
+              <div className="card-title">
+                <span className="estado-dot" style={{
+                  background: unidad.estado === 'verde' ? '#16a34a'
+                    : unidad.estado === 'amarillo' ? '#d97706' : '#dc2626'
+                }} />
+                Patente {unidad.patente}
               </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                <button className="btn btn-outline" onClick={() => setShowForm(false)}>Cancelar</button>
-                <button className="btn btn-primary" onClick={guardarChofer} disabled={guardando || !nombre.trim()}>
-                  {guardando ? 'Guardando...' : 'Guardar y Registrar'}
-                </button>
+              <div style={{ fontSize: 14, color: '#475569', marginBottom: 4 }}>
+                {unidad.marca} {unidad.modelo} {unidad.anio ? `(${unidad.anio})` : ''}
+              </div>
+              <div style={{ fontSize: 13, color: '#94a3b8' }}>
+                Kilometraje actual: {unidad.km_actual?.toLocaleString('es-AR') || 0} km
               </div>
             </div>
-          )}
-        </div>
 
+            <div className="stat-grid">
+              <div className="stat-box">
+                <div className="num" style={{ color: checklistHoy ? '#16a34a' : '#dc2626' }}>
+                  {checklistHoy ? '✓' : '✗'}
+                </div>
+                <div className="lbl">Checklist de hoy</div>
+              </div>
+              <div className="stat-box">
+                <div className="num" style={{ color: fallasPendientes > 0 ? '#dc2626' : '#16a34a' }}>
+                  {fallasPendientes}
+                </div>
+                <div className="lbl">Fallas pendientes</div>
+              </div>
+            </div>
+
+            {!checklistHoy && (
+              <button className="btn btn-primary" onClick={() => navigate('/checklist')}>
+                ✅ Completar checklist de hoy
+              </button>
+            )}
+            {checklistHoy && (
+              <div className="card" style={{ background: '#f0fdf4', borderColor: '#bbf7d0' }}>
+                <span style={{ fontSize: 13.5, color: '#16a34a', fontWeight: 600 }}>
+                  ✓ Ya completaste el checklist de hoy
+                </span>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </>
   )
