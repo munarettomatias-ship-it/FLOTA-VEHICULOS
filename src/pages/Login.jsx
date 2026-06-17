@@ -166,8 +166,8 @@ export default function Login() {
                   <span style={{ fontWeight: '600', color: '#1e293b', fontSize: '15px' }}>{c.nombre}</span>
                   <span style={{ color: '#94a3b8', fontWeight: 'bold' }}>➔</span>
                 </div>
-                  ))
-                )}
+              ))
+            )}
 
             {!showForm ? (
               <button 
