@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useSession } from '../lib/SessionContext' // <-- Conexión directa al contexto global
 
-export default function Login({ setSession, onLogin }) {
+export default function Login() {
   const navigate = useNavigate()
+  const sessionContext = useSession() // <-- Traemos las herramientas de sesión
+  
   const [perfil, setPerfil] = useState('chofer') // 'chofer' o 'admin'
   const [choferes, setChoferes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,15 +29,20 @@ export default function Login({ setSession, onLogin }) {
     setLoading(false)
   }
 
-  // Función mágica para actualizar el estado de la app al entrar como Chofer
+  // Función que altera el estado global usando el contexto detectado
   function activarSesion(rol, usuario = null) {
     const dataSesion = { role: rol, user: usuario }
     
-    // Intentamos actualizar usando los nombres de funciones más comunes de App.jsx
-    if (typeof setSession === 'function') setSession(dataSesion)
-    if (typeof onLogin === 'function') onLogin(dataSesion)
+    if (sessionContext) {
+      // Validamos dinámicamente si el contexto expone 'setSession' o 'login'
+      if (typeof sessionContext.setSession === 'function') {
+        sessionContext.setSession(dataSesion)
+      } else if (typeof sessionContext.login === 'function') {
+        sessionContext.login(dataSesion)
+      }
+    }
     
-    // Volvemos a la ruta raíz donde App.jsx decidirá qué mostrar
+    // Redirige a la raíz para que App.jsx evalúe el rol actualizado
     navigate('/')
   }
 
@@ -81,7 +89,7 @@ export default function Login({ setSession, onLogin }) {
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
         textAlign: 'center'
       }}>
-        {/* LOGO E ICONO */}
+        {/* LOGO */}
         <div style={{ fontSize: '54px', marginBottom: '12px' }}>🚛</div>
         <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', marginBottom: '6px', letterSpacing: '-0.5px' }}>
           Control de Flota
@@ -99,6 +107,7 @@ export default function Login({ setSession, onLogin }) {
           marginBottom: '28px'
         }}>
           <button 
+            type="button"
             onClick={() => setPerfil('chofer')}
             style={{
               flex: 1,
@@ -121,6 +130,7 @@ export default function Login({ setSession, onLogin }) {
             👮 Chofer
           </button>
           <button 
+            type="button"
             onClick={() => setPerfil('admin')}
             style={{
               flex: 1,
@@ -144,7 +154,7 @@ export default function Login({ setSession, onLogin }) {
           </button>
         </div>
 
-        {/* VISTA: CHOFER */}
+        {/* SECCIÓN CHOFER */}
         {perfil === 'chofer' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {loading ? (
@@ -183,6 +193,7 @@ export default function Login({ setSession, onLogin }) {
 
             {!showForm ? (
               <button 
+                type="button"
                 onClick={() => setShowForm(true)}
                 style={{
                   marginTop: '6px',
@@ -228,13 +239,15 @@ export default function Login({ setSession, onLogin }) {
                 />
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button 
+                    type="button"
                     onClick={() => setShowForm(false)}
                     style={{ flex: 1, padding: '10px', background: '#e2e8f0', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', color: '#475569', fontSize: '13px' }}
                   >
                     Cancelar
                   </button>
                   <button 
-                    onClick={guardarChofer}
+                    type="button"
+                    onClick={guardarFlota}
                     disabled={guardando || !nombre.trim()}
                     style={{ flex: 1, padding: '10px', background: '#ea580c', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
                   >
@@ -246,10 +259,11 @@ export default function Login({ setSession, onLogin }) {
           </div>
         )}
 
-        {/* VISTA: ADMINISTRADOR */}
+        {/* SECCIÓN ADMINISTRADOR */}
         {perfil === 'admin' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <button 
+              type="button"
               onClick={() => activarSesion('admin')}
               style={{
                 width: '100%',
