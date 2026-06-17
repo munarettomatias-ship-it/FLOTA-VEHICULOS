@@ -178,7 +178,7 @@ export default function Login() {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.borderColor = '#ea580c';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(234, 88, 12, 0.15)';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.borderColor = '#e2e8f0';
@@ -247,7 +247,7 @@ export default function Login() {
                   </button>
                   <button 
                     type="button"
-                    onClick={guardarFlota}
+                    onClick={guardarChofer} // <-- Corregido para que no rompa la UI al guardar
                     disabled={guardando || !nombre.trim()}
                     style={{ flex: 1, padding: '10px', background: '#ea580c', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
                   >
