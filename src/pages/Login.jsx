@@ -1,29 +1,15 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { useSession } from '../lib/SessionContext'
-import { getChoferes } from '../lib/cache'
-
-const ADMINS = [
-  { id: 'admin-1', nombre: 'Administrador 1', pin: import.meta.env.VITE_ADMIN1_PIN || '1111' },
-  { id: 'admin-2', nombre: 'Administrador 2', pin: import.meta.env.VITE_ADMIN2_PIN || '2222' },
-]
-
-const MAX_INTENTOS = 5
-const BLOQUEO_MINUTOS = 5
 
 export default function Login() {
-  const { login } = useSession()
-  const [role, setRole] = useState('chofer')
+  const navigate = useNavigate()
+  const [perfil, setPerfil] = useState('chofer') // 'chofer' o 'admin'
   const [choferes, setChoferes] = useState([])
   const [loading, setLoading] = useState(true)
-  const [nuevoNombre, setNuevoNombre] = useState('')
-  const [showNuevo, setShowNuevo] = useState(false)
-
-  // flujo de PIN para admin
-  const [adminSeleccionado, setAdminSeleccionado] = useState(null)
-  const [pinInput, setPinInput] = useState('')
-  const [pinError, setPinError] = useState('')
-  const [bloqueadoHasta, setBloqueadoHasta] = useState(null)
+  const [showForm, setShowForm] = useState(false)
+  const [nombre, setNombre] = useState('')
+  const [guardando, setGuardando] = useState(false)
 
   useEffect(() => {
     cargarChoferes()
@@ -31,200 +17,246 @@ export default function Login() {
 
   async function cargarChoferes() {
     setLoading(true)
-    const data = await getChoferes()
-    setChoferes(data)
+    const { data } = await supabase
+      .from('choferes')
+      .select('*')
+      .eq('activo', true)
+      .order('nombre')
+    setChoferes(data || [])
     setLoading(false)
   }
 
-  async function crearChofer() {
-    if (!nuevoNombre.trim()) return
-    const { data, error } = await supabase
+  async function seleccionarChofer(chofer) {
+    localStorage.setItem('chofer_flota', JSON.stringify(chofer))
+    navigate('/chofer/mis-unidades')
+  }
+
+  async function guardarChofer() {
+    if (!nombre.trim()) return
+    setGuardando(true)
+    const { error } = await supabase
       .from('choferes')
-      .insert({ nombre: nuevoNombre.trim() })
-      .select()
-      .single()
-    if (!error && data) {
-      setChoferes([...choferes, data].sort((a, b) => a.nombre.localeCompare(b.nombre)))
-      setNuevoNombre('')
-      setShowNuevo(false)
-      login({ role: 'chofer', id: data.id, nombre: data.nombre })
+      .insert({ nombre: nombre.trim() })
+    
+    if (!error) {
+      setNombre('')
+      setShowForm(false)
+      cargarChoferes()
     }
+    setGuardando(false)
   }
-
-  function seleccionarAdmin(admin) {
-    const bloqueoKey = `admin_bloqueo_${admin.id}`
-    const bloqueoData = JSON.parse(localStorage.getItem(bloqueoKey) || 'null')
-    if (bloqueoData && bloqueoData.hasta > Date.now()) {
-      setBloqueadoHasta(bloqueoData.hasta)
-    } else {
-      setBloqueadoHasta(null)
-    }
-    setAdminSeleccionado(admin)
-    setPinInput('')
-    setPinError('')
-  }
-
-  function intentarPin(valor) {
-    if (!adminSeleccionado) return
-    const nuevoPin = valor
-    setPinInput(nuevoPin)
-    if (nuevoPin.length < 4) return
-
-    const ahora = Date.now()
-    const bloqueoKey = `admin_bloqueo_${adminSeleccionado.id}`
-    const bloqueoData = JSON.parse(localStorage.getItem(bloqueoKey) || 'null')
-
-    if (bloqueoData && bloqueoData.hasta > ahora) {
-      setBloqueadoHasta(bloqueoData.hasta)
-      return
-    }
-
-    if (nuevoPin === adminSeleccionado.pin) {
-      localStorage.removeItem(bloqueoKey)
-      login({ role: 'admin', id: adminSeleccionado.id, nombre: adminSeleccionado.nombre })
-      return
-    }
-
-    const intentos = (bloqueoData?.intentos || 0) + 1
-    if (intentos >= MAX_INTENTOS) {
-      const hasta = ahora + BLOQUEO_MINUTOS * 60 * 1000
-      localStorage.setItem(bloqueoKey, JSON.stringify({ intentos: 0, hasta }))
-      setBloqueadoHasta(hasta)
-      setPinError(`Demasiados intentos. Esperá ${BLOQUEO_MINUTOS} minutos.`)
-    } else {
-      localStorage.setItem(bloqueoKey, JSON.stringify({ intentos, hasta: 0 }))
-      setPinError(`PIN incorrecto (quedan ${MAX_INTENTOS - intentos} intentos)`)
-    }
-    setPinInput('')
-  }
-
-  function volverASeleccionAdmin() {
-    setAdminSeleccionado(null)
-    setPinInput('')
-    setPinError('')
-    setBloqueadoHasta(null)
-  }
-
-  const minutosRestantes = bloqueadoHasta
-    ? Math.ceil((bloqueadoHasta - Date.now()) / 60000)
-    : 0
 
   return (
-    <div className="login-screen">
-      <div className="login-logo">🚚</div>
-      <h1>Control de Flota</h1>
-      <p>Seleccioná tu perfil para continuar</p>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.65), rgba(15, 23, 42, 0.85)), url("https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=1200")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      padding: '20px',
+      fontFamily: 'system-ui, sans-serif'
+    }}>
+      <div style={{
+        background: 'rgba(255, 255, 255, 0.90)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRadius: '24px',
+        padding: '36px 32px',
+        width: '100%',
+        maxWidth: '430px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+        textAlign: 'center'
+      }}>
+        {/* LOGO E ICONO */}
+        <div style={{ fontSize: '54px', marginBottom: '12px' }}>🚛</div>
+        <h1 style={{ fontSize: '26px', fontWeight: '800', color: '#0f172a', marginBottom: '6px', letterSpacing: '-0.5px' }}>
+          Control de Flota
+        </h1>
+        <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '32px' }}>
+          Seleccioná tu perfil para continuar
+        </p>
 
-      <div className="login-card">
-        {!adminSeleccionado && (
-          <div className="role-switch">
-            <button className={role === 'chofer' ? 'active' : ''} onClick={() => setRole('chofer')}>
-              👨‍✈️ Chofer
-            </button>
-            <button className={role === 'admin' ? 'active' : ''} onClick={() => setRole('admin')}>
-              🛠️ Administrador
-            </button>
-          </div>
-        )}
+        {/* SELECTOR DE PERFIL (TABS PREMIUM) */}
+        <div style={{ 
+          display: 'flex', 
+          background: 'rgba(148, 163, 184, 0.12)', 
+          padding: '4px', 
+          borderRadius: '14px', 
+          marginBottom: '28px'
+        }}>
+          <button 
+            onClick={() => setPerfil('chofer')}
+            style={{
+              flex: 1,
+              padding: '12px',
+              borderRadius: '11px',
+              border: 'none',
+              fontSize: '15px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'all 0.2s',
+              backgroundColor: perfil === 'chofer' ? '#ffedd5' : 'transparent',
+              color: perfil === 'chofer' ? '#ea580c' : '#475569',
+              boxShadow: perfil === 'chofer' ? '0 4px 12px rgba(234, 88, 12, 0.15)' : 'none'
+            }}
+          >
+            👮 Chofer
+          </button>
+          <button 
+            onClick={() => setPerfil('admin')}
+            style={{
+              flex: 1,
+              padding: '12px',
+              borderRadius: '11px',
+              border: 'none',
+              fontSize: '15px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'all 0.2s',
+              backgroundColor: perfil === 'admin' ? '#f1f5f9' : 'transparent',
+              color: perfil === 'admin' ? '#1e293b' : '#475569',
+              boxShadow: perfil === 'admin' ? '0 4px 12px rgba(0, 0, 0, 0.05)' : 'none'
+            }}
+          >
+            🛠️ Administrador
+          </button>
+        </div>
 
-        {role === 'chofer' && !adminSeleccionado && (
-          <>
-            {loading && <p style={{ textAlign: 'center', opacity: 0.7 }}>Cargando...</p>}
-            {!loading && choferes.map((c) => (
-              <button
-                key={c.id}
-                className="driver-pill"
-                onClick={() => login({ role: 'chofer', id: c.id, nombre: c.nombre })}
-              >
-                {c.nombre}
-              </button>
-            ))}
+        {/* VISTA DINÁMICA: CHOFER */}
+        {perfil === 'chofer' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {loading ? (
+              <p style={{ color: '#94a3b8', fontSize: '14px', padding: '10px' }}>Cargando choferes...</p>
+            ) : (
+              choferes.map((c) => (
+                <div 
+                  key={c.id}
+                  onClick={() => seleccionarChofer(c)}
+                  style={{
+                    padding: '16px 20px',
+                    background: '#ffffff',
+                    borderRadius: '14px',
+                    border: '1px solid #e2e8f0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.01)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#ea580c';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.01)';
+                  }}
+                >
+                  <span style={{ fontWeight: '600', color: '#1e293b', fontSize: '15px' }}>{c.nombre}</span>
+                  <span style={{ color: '#94a3b8', fontWeight: 'bold' }}>➔</span>
+                </div>
+                  ))
+                )}
 
-            {!showNuevo ? (
-              <button
-                className="driver-pill"
-                style={{ borderStyle: 'dashed', textAlign: 'center', opacity: 0.85 }}
-                onClick={() => setShowNuevo(true)}
+            {!showForm ? (
+              <button 
+                onClick={() => setShowForm(true)}
+                style={{
+                  marginTop: '6px',
+                  padding: '14px',
+                  background: 'transparent',
+                  border: '2px dashed #cbd5e1',
+                  borderRadius: '14px',
+                  color: '#64748b',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
               >
                 + Agregar nuevo chofer
               </button>
             ) : (
-              <div style={{ marginTop: 8 }}>
-                <input
-                  placeholder="Nombre y apellido"
-                  value={nuevoNombre}
-                  onChange={(e) => setNuevoNombre(e.target.value)}
-                  style={{
-                    width: '100%', padding: 12, borderRadius: 10, border: 'none',
-                    marginBottom: 8, fontSize: 15,
-                  }}
-                  autoFocus
-                />
-                <button className="btn btn-primary" onClick={crearChofer}>Crear y continuar</button>
-              </div>
-            )}
-          </>
-        )}
-
-        {role === 'admin' && !adminSeleccionado && (
-          <>
-            {ADMINS.map((a) => (
-              <button
-                key={a.id}
-                className="driver-pill"
-                onClick={() => seleccionarAdmin(a)}
-              >
-                🔒 {a.nombre}
-              </button>
-            ))}
-          </>
-        )}
-
-        {adminSeleccionado && (
-          <div>
-            <button
-              onClick={volverASeleccionAdmin}
-              style={{ background: 'none', border: 'none', color: 'white', opacity: 0.7, fontSize: 13, marginBottom: 14, padding: 0 }}
-            >
-              ← Volver
-            </button>
-            <div style={{ textAlign: 'center', marginBottom: 16 }}>
-              <div style={{ fontSize: 30, marginBottom: 6 }}>🔒</div>
-              <div style={{ fontWeight: 700, fontSize: 15 }}>{adminSeleccionado.nombre}</div>
-              <div style={{ fontSize: 12.5, opacity: 0.75 }}>Ingresá tu PIN de 4 dígitos</div>
-            </div>
-
-            {bloqueadoHasta && bloqueadoHasta > Date.now() ? (
-              <div style={{
-                background: 'rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.4)',
-                borderRadius: 10, padding: 12, textAlign: 'center', fontSize: 13,
+              <div style={{ 
+                background: '#f8fafc', 
+                padding: '16px', 
+                borderRadius: '14px', 
+                border: '1px solid #e2e8f0',
+                textAlign: 'left',
+                marginTop: '6px'
               }}>
-                Cuenta bloqueada temporalmente.<br />Probá en {minutosRestantes} minuto(s).
-              </div>
-            ) : (
-              <>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={pinInput}
-                  onChange={(e) => intentarPin(e.target.value.replace(/\D/g, ''))}
-                  autoFocus
+                <label style={{ fontSize: '13px', fontWeight: '700', color: '#475569', display: 'block', marginBottom: '6px' }}>
+                  Nombre completo
+                </label>
+                <input 
+                  type="text"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  placeholder="Ej: Carlos Tévez"
                   style={{
-                    width: '100%', padding: 14, borderRadius: 10, border: 'none',
-                    marginBottom: 10, fontSize: 22, textAlign: 'center', letterSpacing: 8,
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    marginBottom: '14px',
+                    fontSize: '14px',
+                    boxSizing: 'border-box'
                   }}
-                  placeholder="••••"
                 />
-                {pinError && (
-                  <div style={{ color: '#fca5a5', fontSize: 12.5, textAlign: 'center', marginTop: 4 }}>
-                    {pinError}
-                  </div>
-                )}
-              </>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    onClick={() => setShowForm(false)}
+                    style={{ flex: 1, padding: '10px', background: '#e2e8f0', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', color: '#475569', fontSize: '13px' }}
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={guardarChofer}
+                    disabled={guardando || !nombre.trim()}
+                    style={{ flex: 1, padding: '10px', background: '#ea580c', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
+                  >
+                    {guardando ? 'Guardando...' : 'Guardar'}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}
+
+        {/* VISTA DINÁMICA: ADMINISTRADOR */}
+        {perfil === 'admin' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <button 
+              onClick={() => navigate('/admin/unidades')}
+              style={{
+                width: '100%',
+                padding: '15px',
+                background: '#0f172a',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '14px',
+                fontWeight: '600',
+                fontSize: '15px',
+                cursor: 'pointer',
+                transition: 'background 0.2s'
+              }}
+            >
+              Ingresar al Panel de Control ➔
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   )
