@@ -13,6 +13,7 @@ export default function Checklist() {
   const [items, setItems] = useState({})
   const [km, setKm] = useState('')
   const [observaciones, setObservaciones] = useState('')
+  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10))
   const [loading, setLoading] = useState(true)
   const [guardando, setGuardando] = useState(false)
 
@@ -42,6 +43,13 @@ export default function Checklist() {
     const tieneFallas = Object.values(items).some((v) => v === 'falla')
     const kmNum = parseInt(km) || unidad.km_actual
 
+    // Si el chofer eligió una fecha distinta a hoy, conservamos la hora
+    // actual para esa fecha (no tiene sentido fijar siempre medianoche,
+    // pero tampoco hace falta pedir la hora exacta).
+    const ahora = new Date()
+    const [anio, mes, dia] = fecha.split('-').map(Number)
+    const fechaConHora = new Date(anio, mes - 1, dia, ahora.getHours(), ahora.getMinutes(), ahora.getSeconds())
+
     const { error } = await supabase.from('checklists').insert({
       unidad_id: unidad.id,
       chofer_id: session.id,
@@ -49,6 +57,7 @@ export default function Checklist() {
       items,
       observaciones: observaciones.trim() || null,
       tiene_fallas: tieneFallas,
+      fecha: fechaConHora.toISOString(),
     })
 
     if (!error) {
@@ -96,7 +105,16 @@ export default function Checklist() {
       <TopBar title="✅ Checklist diario" subtitle={`Patente ${unidad.patente}`} />
       <div className="content">
         <div className="card">
-          <div className="field">
+          <div className="field" style={{ marginBottom: 10 }}>
+            <label>Fecha del checklist</label>
+            <input
+              type="date"
+              value={fecha}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setFecha(e.target.value)}
+            />
+          </div>
+          <div className="field" style={{ marginBottom: 0 }}>
             <label>Kilometraje actual</label>
             <input
               type="number"

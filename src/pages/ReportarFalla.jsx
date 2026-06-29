@@ -139,8 +139,8 @@ export default function ReportarFalla() {
                 onClick={() => setCategoria(cat.key)}
                 className="toggle-btn"
                 style={{
-                  background: categoria === cat.key ? '#1d4e89' : 'white',
-                  borderColor: categoria === cat.key ? '#1d4e89' : '#e2e8f0',
+                  background: categoria === cat.key ? '#006cb5' : 'white',
+                  borderColor: categoria === cat.key ? '#006cb5' : '#e2e8f0',
                   color: categoria === cat.key ? 'white' : '#475569',
                 }}
               >

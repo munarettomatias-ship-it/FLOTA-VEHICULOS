@@ -7,13 +7,13 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/icon-192.png', 'icons/icon-512.png'],
+      includeAssets: ['icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-512-maskable.png'],
       manifest: {
-        name: 'Control de Flota',
-        short_name: 'Flota',
-        description: 'App de mantenimiento y checklist de vehículos',
-        theme_color: '#0b2545',
-        background_color: '#0b2545',
+        name: 'Mimen | Control de Flota',
+        short_name: 'Mimen Flota',
+        description: 'Mimen — App de mantenimiento y checklist de vehículos',
+        theme_color: '#003d66',
+        background_color: '#003d66',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
@@ -29,7 +29,7 @@ export default defineConfig({
             type: 'image/png',
           },
           {
-            src: '/icons/icon-512.png',
+            src: '/icons/icon-512-maskable.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

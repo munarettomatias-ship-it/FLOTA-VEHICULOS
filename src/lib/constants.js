@@ -40,7 +40,37 @@ export const TIPO_SERVICE = [
 export const TIPO_ALERTA = [
   { key: 'cambio_aceite', label: 'Cambio de aceite' },
   { key: 'vtv', label: 'VTV / RTO' },
+  { key: 'senasa', label: 'SENASA' },
   { key: 'seguro', label: 'Seguro' },
   { key: 'patente', label: 'Patente' },
   { key: 'otro', label: 'Otro' },
+]
+
+export const TIPOS_COMBUSTIBLE = [
+  { key: 'vpower_nafta', label: 'V-Power Nafta', estacion: 'shell', icon: '⛽' },
+  { key: 'vpower_gasoil', label: 'V-Power Diesel', estacion: 'shell', icon: '⛽' },
+  { key: 'infinia_nafta', label: 'Infinia Nafta', estacion: 'ypf', icon: '⛽' },
+  { key: 'infinia_gasoil', label: 'Infinia Diesel', estacion: 'ypf', icon: '⛽' },
+]
+
+export const ESTACIONES = [
+  { key: 'shell', label: 'Shell', color: '#FFD700' },
+  { key: 'ypf', label: 'YPF', color: '#0066CC' },
+]
+
+export const TIPOS_VENCIMIENTO = [
+  {
+    key: 'vtv',
+    label: 'VTV / RTO',
+    icon: '🪪',
+    descripcion: 'Verificación Técnica Vehicular',
+    diasAlerta: 7,
+  },
+  {
+    key: 'senasa',
+    label: 'SENASA',
+    icon: '🌿',
+    descripcion: 'Habilitación SENASA',
+    diasAlerta: 7,
+  },
 ]

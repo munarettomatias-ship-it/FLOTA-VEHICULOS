@@ -79,7 +79,7 @@ export default function FallasAdmin() {
                 <div>
                   <strong>{cat?.icon} {cat?.label}</strong>
                   <span
-                    style={{ marginLeft: 8, fontSize: 12.5, fontWeight: 700, color: '#0b2545', cursor: 'pointer', textDecoration: 'underline' }}
+                    style={{ marginLeft: 8, fontSize: 12.5, fontWeight: 700, color: '#003d66', cursor: 'pointer', textDecoration: 'underline' }}
                     onClick={() => navigate(`/unidades/${f.unidad_id}`)}
                   >
                     {f.unidades?.patente}

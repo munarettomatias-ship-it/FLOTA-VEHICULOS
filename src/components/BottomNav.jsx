@@ -10,12 +10,18 @@ export default function BottomNav() {
         { to: '/', icon: '🏠', label: 'Inicio' },
         { to: '/unidades', icon: '🚚', label: 'Unidades' },
         { to: '/fallas', icon: '⚠️', label: 'Fallas' },
+        { to: '/reparaciones', icon: '🔧', label: 'Reparac.' },
+        { to: '/combustible', icon: '⛽', label: 'Combustible' },
+        { to: '/vencimientos', icon: '📋', label: 'VTV/SENASA' },
+        { to: '/choferes', icon: '👨‍✈️', label: 'Choferes' },
         { to: '/alertas', icon: '🔔', label: 'Alertas' },
       ]
     : [
         { to: '/', icon: '🏠', label: 'Inicio' },
         { to: '/checklist', icon: '✅', label: 'Checklist' },
         { to: '/reportar', icon: '⚠️', label: 'Reportar' },
+        { to: '/combustible', icon: '⛽', label: 'Combustible' },
+        { to: '/vencimientos', icon: '🪪', label: 'VTV/SENASA' },
         { to: '/historial', icon: '📋', label: 'Historial' },
       ]
 

@@ -19,6 +19,19 @@ App web instalable (PWA) para Android e iOS. Sin login: el chofer elige su nombr
 
 El estado de cada unidad (verde/amarillo/rojo) se actualiza automáticamente según las fallas reportadas.
 
+## Gestión de mantenimiento y choferes (administrador)
+
+Dentro del detalle de cada unidad (pestaña "Services"), el administrador puede:
+- Registrar un nuevo service/arreglo con tipo, descripción, taller, costo total y kilometraje.
+- Agregar una lista de repuestos cambiados en ese service, cada uno con cantidad y costo unitario (se suman al total del service automáticamente en la vista).
+- Editar o eliminar cualquier registro de service ya guardado.
+- Ver el total acumulado invertido en mantenimiento de esa unidad.
+
+En la pestaña "Choferes" del menú inferior, el administrador puede:
+- Agregar nuevos choferes.
+- Editar el nombre de un chofer existente.
+- Eliminar un chofer: si nunca completó checklists ni reportó fallas, se borra para siempre. Si ya tiene historial registrado, en cambio se desactiva (deja de aparecer en las listas, pero ese historial pasado se conserva intacto). Si tenía una unidad asignada, queda sin chofer asignado.
+
 ## Acceso de administrador (PIN)
 
 Para evitar que cualquiera con el link entre como administrador, el acceso admin pide un PIN de 4 dígitos. Por defecto son `1111` y `2222` (Administrador 1 y 2) — **cambialos** antes de desplegar, editando en Vercel (o en tu `.env` local) las variables:
@@ -86,9 +99,10 @@ src/
     HistorialChofer.jsx   → historial personal del chofer
     AdminHome.jsx         → dashboard del administrador
     Unidades.jsx          → listado y alta de unidades
-    UnidadDetalle.jsx     → detalle de unidad: fallas + services
+    UnidadDetalle.jsx     → detalle de unidad: fallas + services + repuestos
     FallasAdmin.jsx       → gestión de todas las fallas reportadas
     AlertasAdmin.jsx      → alertas preventivas de mantenimiento
+    ChoferesAdmin.jsx     → gestión de choferes (alta, edición, eliminación)
 ```
 
 ## Personalizar ítems del checklist o categorías
