@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useSession } from '../lib/SessionContext'
 import { getUnidadDeChofer, getUnidades, invalidateUnidades } from '../lib/cache'
+import { suscribirPush, pushPermitido, pushSoportado } from '../lib/push'
 import TopBar from '../components/TopBar'
 
 export default function ChoferHome() {
@@ -20,6 +21,15 @@ export default function ChoferHome() {
   const [unidadesDisponibles, setUnidadesDisponibles] = useState([])
   const [asignando, setAsignando] = useState(false)
   const [aviso, setAviso] = useState('')
+  const [notifActivas, setNotifActivas] = useState(pushPermitido())
+  const [activandoNotif, setActivandoNotif] = useState(false)
+
+  async function activarNotificaciones() {
+    setActivandoNotif(true)
+    const ok = await suscribirPush(session.id)
+    setActivandoNotif(false)
+    setNotifActivas(ok)
+  }
 
   useEffect(() => {
     cargarDatos()
@@ -103,6 +113,30 @@ export default function ChoferHome() {
         {aviso && (
           <div className="card" style={{ background: '#eef4fb', borderColor: '#cbdcef', fontSize: 13.5, color: '#00558c' }}>
             {aviso}
+          </div>
+        )}
+
+        {!loading && pushSoportado() && !notifActivas && (
+          <div className="card" style={{ background: '#fff7ed', borderColor: '#fed7aa' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 26 }}>🔔</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, color: '#c2410c', fontSize: 14 }}>
+                  Activá las notificaciones
+                </div>
+                <div style={{ fontSize: 12.5, color: '#9a3412', marginTop: 2 }}>
+                  Enterate al instante cuando tu falla pase a revisión o se resuelva.
+                </div>
+              </div>
+            </div>
+            <button
+              className="btn btn-primary btn-sm"
+              style={{ marginTop: 10, width: '100%' }}
+              onClick={activarNotificaciones}
+              disabled={activandoNotif}
+            >
+              {activandoNotif ? 'Activando...' : '🔔 Activar notificaciones'}
+            </button>
           </div>
         )}
 

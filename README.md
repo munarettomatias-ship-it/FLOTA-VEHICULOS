@@ -2,6 +2,12 @@
 
 App web instalable (PWA) para Android e iOS. Sin login: el chofer elige su nombre de una lista, y hay 2 perfiles de administrador.
 
+## ⚠️ Pasos obligatorios antes de desplegar esta versión
+
+1. Corré el SQL `nuevas_tablas.sql` en el SQL Editor de Supabase (crea las tablas de documentos y suscripciones push, y el bucket de storage para fotos de presupuestos).
+
+2. Configurá las notificaciones push (ver sección completa más abajo) — sin este paso, la app funciona normal pero los pushes no se envían.
+
 ## Qué incluye
 
 **Para choferes:**
@@ -105,7 +111,37 @@ src/
     ChoferesAdmin.jsx     → gestión de choferes (alta, edición, eliminación)
 ```
 
-## Personalizar ítems del checklist o categorías
+## Notificaciones push (avisos al celular del chofer)
+
+Cuando el admin marca una falla como "en revisión" o "resuelta", el chofer que la reportó recibe una notificación push real en su celular — aparece en la pantalla de bloqueo y centro de notificaciones, igual que WhatsApp, aunque tenga la app cerrada.
+
+### Cómo activarlo (una sola vez)
+
+1. **Andá a tu proyecto en Supabase → Edge Functions → Create a new function**, llamala `notify-falla`, y pegá el contenido del archivo `supabase/functions/notify-falla/index.ts` que está en este zip.
+
+2. En esa misma sección de Edge Functions, andá a **Settings / Secrets** y agregá estas 2 variables de entorno (ya generadas, no las cambies):
+   - `VAPID_PUBLIC_KEY` = `BIXny_2W_T6xCMCSpnry-C10aMlo272b6Is9PTHl_QMnKyTXWhN6OG3RJRAi_2ZIMCY8-RU8SQ1mNYlKKI0GmNA`
+   - `VAPID_PRIVATE_KEY` = `ZLkZRAcOhr-gWNqdHvbTwfE5pm4wd13MP1PyvmZfnhM`
+
+   Estas claves identifican a tu app frente a Google/Apple para poder mandar notificaciones. Guardalas en un lugar seguro — si las perdés, las suscripciones existentes dejan de funcionar y los choferes deben volver a activar las notificaciones.
+
+3. Listo. No hace falta tocar nada más: la función ya está conectada desde el código de la app (`FallasAdmin.jsx`).
+
+### Cómo lo activa el chofer
+
+La primera vez que un chofer entra a la app, después de unos segundos el navegador le va a preguntar si permite notificaciones. Si toca "Permitir", queda activado. Si lo rechaza sin querer, en su pantalla de Inicio va a ver un cartel naranja "Activá las notificaciones" con un botón para intentarlo de nuevo.
+
+**Importante (iPhone):** las notificaciones push solo funcionan si la app está **instalada** en la pantalla de inicio (Safari → compartir → "Agregar a pantalla de inicio"). Si el chofer la usa solo desde una pestaña del navegador, el permiso no se puede activar — es una limitación de Apple, no de la app.
+
+## Documentos: presupuestos y diagnósticos
+
+Dentro del detalle de cada unidad, la pestaña "📎 Presupuestos" permite al administrador subir fotos (sacadas directo con la cámara del celular) o PDFs de presupuestos y diagnósticos previos a una reparación. Cada documento se guarda con un título, tipo (presupuesto / diagnóstico / otro) y notas opcionales. Las fotos se pueden ver en grande tocándolas.
+
+## Editar o eliminar una unidad
+
+Desde la pantalla "Unidades" del admin, cada unidad tiene un botón "✏️ Editar" que abre un formulario para corregir patente, marca, modelo, año, chofer asignado y kilometraje. También se puede dar de baja una unidad desde ahí (no se borra el historial de checklists/fallas pasadas, solo deja de aparecer en las listas activas).
+
+
 
 Editá el archivo `src/lib/constants.js`. Ahí están todas las listas (ítems del checklist, categorías de falla, tipos de service, tipos de alerta) en un solo lugar.
 

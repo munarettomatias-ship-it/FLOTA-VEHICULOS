@@ -5,6 +5,7 @@ import { useSession } from '../lib/SessionContext'
 import { TIPO_SERVICE, ESTADO_FALLA, CATEGORIAS_FALLA } from '../lib/constants'
 import { getChoferes, invalidateUnidades } from '../lib/cache'
 import { actualizarEstadoUnidadEnBackground } from '../lib/unidadOps'
+import DocumentosUnidad from '../components/DocumentosUnidad'
 import TopBar from '../components/TopBar'
 
 export default function UnidadDetalle() {
@@ -283,7 +284,14 @@ export default function UnidadDetalle() {
           <button className={`tab-btn ${tab === 'facturas' ? 'active' : ''}`} onClick={() => setTab('facturas')}>
             🧾 Facturas
           </button>
+          <button className={`tab-btn ${tab === 'documentos' ? 'active' : ''}`} onClick={() => setTab('documentos')}>
+            📎 Presupuestos
+          </button>
         </div>
+
+        {tab === 'documentos' && (
+          <DocumentosUnidad unidadId={id} />
+        )}
 
         {tab === 'fallas' && (
           <>

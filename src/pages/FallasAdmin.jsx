@@ -5,6 +5,24 @@ import { CATEGORIAS_FALLA, ESTADO_FALLA } from '../lib/constants'
 import { actualizarEstadoUnidadEnBackground } from '../lib/unidadOps'
 import TopBar from '../components/TopBar'
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+async function mandarNotificacion(choferId, titulo, cuerpo) {
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/notify-falla`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ chofer_id: choferId, titulo, cuerpo, url: '/' }),
+    })
+  } catch (e) {
+    console.warn('Push no enviado:', e)
+  }
+}
+
 export default function FallasAdmin() {
   const navigate = useNavigate()
   const [fallas, setFallas] = useState([])
@@ -25,10 +43,26 @@ export default function FallasAdmin() {
     setLoading(false)
   }
 
-  async function cambiarEstado(fallaId, unidadId, nuevoEstado) {
-    await supabase.from('reportes_fallas').update({ estado: nuevoEstado }).eq('id', fallaId)
+  async function cambiarEstado(falla, nuevoEstado) {
+    await supabase.from('reportes_fallas').update({ estado: nuevoEstado }).eq('id', falla.id)
+    actualizarEstadoUnidadEnBackground(falla.unidad_id)
+
+    const patente = falla.unidades?.patente || 'tu vehículo'
+    if (nuevoEstado === 'en_revision') {
+      mandarNotificacion(
+        falla.chofer_id,
+        '🔧 Falla en revisión',
+        `Tu reporte en ${patente} está siendo revisado por el equipo.`
+      )
+    } else if (nuevoEstado === 'resuelto') {
+      mandarNotificacion(
+        falla.chofer_id,
+        '✅ Problema resuelto',
+        `El problema que reportaste en ${patente} fue solucionado.`
+      )
+    }
+
     cargarFallas()
-    actualizarEstadoUnidadEnBackground(unidadId)
   }
 
   const fallasFiltradas = fallas.filter((f) => {
@@ -97,11 +131,11 @@ export default function FallasAdmin() {
               {f.estado !== 'resuelto' && (
                 <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
                   {f.estado === 'pendiente' && (
-                    <button className="btn btn-sm btn-outline" onClick={() => cambiarEstado(f.id, f.unidad_id, 'en_revision')}>
+                    <button className="btn btn-sm btn-outline" onClick={() => cambiarEstado(f, 'en_revision')}>
                       Marcar en revisión
                     </button>
                   )}
-                  <button className="btn btn-sm btn-success" onClick={() => cambiarEstado(f.id, f.unidad_id, 'resuelto')}>
+                  <button className="btn btn-sm btn-success" onClick={() => cambiarEstado(f, 'resuelto')}>
                     Marcar resuelto
                   </button>
                 </div>

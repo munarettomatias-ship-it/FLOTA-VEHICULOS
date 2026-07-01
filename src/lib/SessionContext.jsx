@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { suscribirPush, pushSoportado } from './push'
 
 const SessionContext = createContext(null)
 
@@ -7,12 +8,21 @@ export function SessionProvider({ children }) {
 
   useEffect(() => {
     const saved = localStorage.getItem('flota_session')
-    if (saved) setSession(JSON.parse(saved))
+    if (saved) {
+      const s = JSON.parse(saved)
+      setSession(s)
+      if (s?.role === 'chofer' && pushSoportado() && Notification.permission === 'granted') {
+        suscribirPush(s.id)
+      }
+    }
   }, [])
 
-  const login = (data) => {
+  const login = async (data) => {
     setSession(data)
     localStorage.setItem('flota_session', JSON.stringify(data))
+    if (data?.role === 'chofer' && pushSoportado()) {
+      setTimeout(() => suscribirPush(data.id), 2000)
+    }
   }
 
   const logout = () => {

@@ -14,7 +14,9 @@
     "date-fns": "^4.4.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^7.18.0"
+    "react-router-dom": "^7.18.0",
+    "workbox-core": "^7.4.1",
+    "workbox-precaching": "^7.4.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
